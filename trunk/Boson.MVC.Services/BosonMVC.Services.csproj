@@ -105,7 +105,6 @@
     <Compile Include="ExtDirect\RequestDataConverter.cs" />
     <Compile Include="ExtDirect\ResultsConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RequestContext.cs" />
     <Compile Include="WindsorControllerFactory.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
