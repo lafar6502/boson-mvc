@@ -36,6 +36,10 @@ namespace BosonMVC.Services.Boson
         }
 
         private Quacker _viewDataWrapper;
+
+        /// <summary>
+        /// Quacking accessor of view data
+        /// </summary>
         protected IQuackFu Data
         {
             get { return _viewDataWrapper; }
@@ -43,6 +47,9 @@ namespace BosonMVC.Services.Boson
 
         private IQuackFu _utilsWrapper = new UtilsWrapper();
 
+        /// <summary>
+        /// Quacking accessor of view utils class
+        /// </summary>
         protected IQuackFu ViewUtil
         {
             get { return _utilsWrapper; }
@@ -444,6 +451,10 @@ namespace BosonMVC.Services.Boson
             _curTd = null;
         }
 
+        /// <summary>
+        /// Template body accessible during template definition.
+        /// Can be used to directly declare the body delegate, with arguments
+        /// </summary>
         protected TemplateDelegate TemplateBody
         {
             get { return _curTd.Body; }
@@ -463,8 +474,15 @@ namespace BosonMVC.Services.Boson
         }
 
 
+        /// <summary>
+        /// Template argument (object passed to it from call_template)
+        /// </summary>
         [DuckTyped]
         protected object TArg;
+
+        /// <summary>
+        /// Template parameters (passed to call_template or defaults)
+        /// </summary>
         protected IDictionary TParam;
         
 
@@ -485,13 +503,24 @@ namespace BosonMVC.Services.Boson
             }
             td.View.TArg = value;
             td.View.TParam = parameters;
-            object ret = td.Body(value, parameters);
-            if (ret != null)
+            try
             {
-                write_obj(ret);
+                object ret = td.Body(value, parameters);
+                if (ret != null)
+                {
+                    write_obj(ret);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error processing template {0}: {1}", name, ex);
+                throw;
             }
         }
 
+        /// <summary>
+        /// View 'body' as declared in the boson file
+        /// </summary>
         private Action _body;
 
         /// <summary>
