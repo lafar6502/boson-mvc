@@ -14,7 +14,7 @@ namespace BosonMVC.Services.Boson
 {
     public abstract class JSONViewBase : IView
     {
-        protected abstract void DoRender();
+        protected abstract void PrepareView();
         protected ViewContext Context;
         protected Logger log = LogManager.GetCurrentClassLogger();
 
@@ -71,7 +71,11 @@ namespace BosonMVC.Services.Boson
                 log = LogManager.GetLogger(this.GetType().Name + ".boson");
                 Context = vc;
                 _out = writer;
-                DoRender();
+                PrepareView();
+                if (_body != null)
+                {
+                    _body();
+                }
             }
             catch (JsonViewException)
             {
@@ -171,11 +175,7 @@ namespace BosonMVC.Services.Boson
 
         protected void val(object v)
         {
-            if (v is DateTime)
-            {
-                v = ((DateTime)v).ToString("yyyy-MM-dd HH:mm:ss");
-            }
-            _out.WriteValue(v);
+            write_obj(v);
         }
 
         protected void raw(string js)
@@ -292,7 +292,6 @@ namespace BosonMVC.Services.Boson
 
         private void write_obj(object ob)
         {
-
             if (ob is IDictionary)
             {
                 IDictionary d = (IDictionary)ob;
@@ -333,7 +332,11 @@ namespace BosonMVC.Services.Boson
             }
             else if (ob is ValueType || ob is string)
             {
-                val(ob);
+                if (ob is DateTime)
+                {
+                    ob = ((DateTime)ob).ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                _out.WriteValue(ob);
                 //_out.WriteValue(ob);
             }
             else
@@ -351,18 +354,61 @@ namespace BosonMVC.Services.Boson
                 vname = Path.Combine(basePath, vname);
             }
             JSONViewBase vb = (JSONViewBase) Factory.CreateView(vname);
+            vb.Context = Context;
+            vb._out = _out;
             vb.ViewUtil = this.ViewUtil;
-            vb.Render(this.Context, Output);
+            vb.PrepareView();
+            foreach (string tn in vb._templates.Keys)
+            {
+                log.Debug("Imported template {0} from {1}", tn, vname);
+                this._templates[tn] = vb._templates[tn];
+            }
         }
 
-        protected void define_template(string name, Action act)
-        {
 
+        [DuckTyped]
+        protected object T { get; set; }
+        protected IQuackFu Tparam { get; set; }
+
+
+        public delegate object TemplateDelegate(object value, IQuackFu parameters);
+
+        protected Hashtable _templates = new Hashtable();
+
+        protected void define_template(string name, TemplateDelegate act)
+        {
+            _templates[name] = act;
         }
 
-        protected void call_template(string name, IDictionary parameters)
+        /// <summary>
+        /// Call specified template
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <param name="parameters"></param>
+        protected void call_template(string name, object value, IDictionary parameters)
         {
-            throw new NotImplementedException();
+            TemplateDelegate td = (TemplateDelegate)_templates[name];
+            if (td == null) throw new Exception("Template not found: " + name);
+
+            IQuackFu q = new QuackDictWrapper(parameters);
+            object ret = td(value, q);
+            if (ret != null)
+            {
+                write_obj(ret);
+            }
+        }
+
+        private Action _body;
+
+        /// <summary>
+        /// Define view 'body', that is its output generating method.
+        /// If you don't define the body nothing bad happens but includes might work in strange way
+        /// </summary>
+        /// <param name="act"></param>
+        protected void body(Action act)
+        {
+            _body = act;
         }
 
         private string _viewPath;
@@ -453,7 +499,16 @@ namespace BosonMVC.Services.Boson
             #endregion
         }
 
+        /// <summary>
+        /// Calls a template in specified view
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="inputValue"></param>
+        /// <param name="parameters"></param>
+        public void CallTemplate(string name, object inputValue, IQuackFu parameters)
+        {
             
+        }
 
     }
 }

@@ -142,6 +142,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Views\Test\About.boson" />
+    <None Include="Views\Test\Index.boson" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="Models\" />
   </ItemGroup>

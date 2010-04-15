@@ -1,0 +1,13 @@
+
+t1 = def(v as duck, param):
+	obj:
+		prop {'name':'jestem sobie objekt', 'value': v}
+define_template "MT1", t1
+
+
+t2 = def(v as duck, param):
+	return {'a':1, 'b':'2', 'c':'3'}
+define_template "MT2", t2
+
+body:
+	pass

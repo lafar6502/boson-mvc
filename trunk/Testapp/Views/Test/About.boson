@@ -1,2 +1,12 @@
+
+include "../BosonTemplates/main.boson"
+
 obj:
 	prop {'ala':'ma kota'}
+	arr 'list':
+		val 389
+		
+	prop 'dupa':
+		call_template "MT1", 30, {}
+	prop 'MT2':
+		call_template "MT2", 30, {}
