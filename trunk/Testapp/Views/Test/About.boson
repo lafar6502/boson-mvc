@@ -9,4 +9,4 @@ obj:
 	prop 'dupa':
 		call_template "MT1", 30, {}
 	prop 'MT2':
-		call_template "MT2", 30, {}
+		call_template "MT2", 30, {'size': 3289, 'type':'SW'}

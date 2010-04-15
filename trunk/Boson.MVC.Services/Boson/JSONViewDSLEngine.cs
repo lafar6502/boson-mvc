@@ -31,7 +31,9 @@ namespace BosonMVC.Services.Boson
             "System.Data",
             "System", 
             "System.Web",
-            "System.IO"
+            "System.IO",
+            "System.Collections"
+            
             };
 
         public string[] Namespaces

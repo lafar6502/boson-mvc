@@ -110,6 +110,11 @@ namespace BosonMVC.Services.Boson
             _out.WriteEndObject();
         }
 
+        /// <summary>
+        /// Output a property 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="act"></param>
         protected void obj(string name, Action act)
         {
             try
@@ -144,6 +149,16 @@ namespace BosonMVC.Services.Boson
                 ret[key] = right[key];
             }
             return ret;
+        }
+
+        /// <summary>
+        /// Wrap dictionary in a quack object
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <returns></returns>
+        protected IQuackFu quack(IDictionary dic)
+        {
+            return new QuackDictWrapper(dic);
         }
 
         protected void arr(Action act)
@@ -236,7 +251,11 @@ namespace BosonMVC.Services.Boson
                 prop(key, dic[key]);
             }
         }
-
+        /// <summary>
+        /// Output new object 'name': new SomeObject({ })
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="act"></param>
         protected void newobj(string name, Action act)
         {
             try
@@ -258,6 +277,11 @@ namespace BosonMVC.Services.Boson
             }
         }
 
+        /// <summary>
+        /// Outptu function call 'name' : someFunction({ })
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="act"></param>
         protected void callfn(string name, Action act)
         {
             try
@@ -279,7 +303,10 @@ namespace BosonMVC.Services.Boson
                 throw new JsonViewException("Error writing function call " + name, ex);
             }
         }
-
+        /// <summary>
+        /// skip the content (for temporarily disabling some code fragment)
+        /// </summary>
+        /// <param name="prm"></param>
         protected void skip(params object[] prm)
         {
 
@@ -345,7 +372,10 @@ namespace BosonMVC.Services.Boson
                 ser.Serialize(_out, ob);
             }
         }
-
+        /// <summary>
+        /// Include another view
+        /// </summary>
+        /// <param name="vname"></param>
         protected void include(string vname)
         {
             if (!vname.StartsWith("~"))
@@ -360,24 +390,41 @@ namespace BosonMVC.Services.Boson
             vb.PrepareView();
             foreach (string tn in vb._templates.Keys)
             {
-                log.Debug("Imported template {0} from {1}", tn, vname);
                 this._templates[tn] = vb._templates[tn];
+                log.Debug("Imported template {0} from {1}", tn, vname);
             }
         }
 
+        public delegate object TemplateDelegate(object value, IDictionary parameters);
 
-        [DuckTyped]
-        protected object T { get; set; }
-        protected IQuackFu Tparam { get; set; }
-
-
-        public delegate object TemplateDelegate(object value, IQuackFu parameters);
+        protected class TemplateDefinition
+        {
+            public TemplateDelegate Body { get; set; }
+            public IDictionary DefaultParams { get; set; }
+            public string Name { get; set; }
+        }
 
         protected Hashtable _templates = new Hashtable();
 
+        /// <summary>
+        /// Define a new template
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="act"></param>
         protected void define_template(string name, TemplateDelegate act)
         {
-            _templates[name] = act;
+            _templates[name] = new TemplateDefinition { Name = name, Body = act, DefaultParams = null };
+        }
+
+        /// <summary>
+        /// Define a new template specifying default parameters
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="defaultParams"></param>
+        /// <param name="td"></param>
+        protected void define_template(string name, IDictionary defaultParams, TemplateDelegate td)
+        {
+            _templates[name] = new TemplateDefinition { Name = name, Body = td, DefaultParams = defaultParams };
         }
 
         /// <summary>
@@ -388,11 +435,14 @@ namespace BosonMVC.Services.Boson
         /// <param name="parameters"></param>
         protected void call_template(string name, object value, IDictionary parameters)
         {
-            TemplateDelegate td = (TemplateDelegate)_templates[name];
+            TemplateDefinition td = (TemplateDefinition)_templates[name];
             if (td == null) throw new Exception("Template not found: " + name);
 
-            IQuackFu q = new QuackDictWrapper(parameters);
-            object ret = td(value, q);
+            if (td.DefaultParams != null)
+            {
+                parameters = apply(td.DefaultParams, parameters);
+            }
+            object ret = td.Body(value, parameters);
             if (ret != null)
             {
                 write_obj(ret);
@@ -499,16 +549,7 @@ namespace BosonMVC.Services.Boson
             #endregion
         }
 
-        /// <summary>
-        /// Calls a template in specified view
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="inputValue"></param>
-        /// <param name="parameters"></param>
-        public void CallTemplate(string name, object inputValue, IQuackFu parameters)
-        {
-            
-        }
+       
 
     }
 }
