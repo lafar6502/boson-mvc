@@ -1,13 +1,21 @@
+import System.Collections
 
-t1 = def(v as duck, param):
+t1 = def(v as duck, param as IDictionary):
 	obj:
 		prop {'name':'jestem sobie objekt', 'value': v}
 define_template "MT1", t1
 
 
-t2 = def(v as duck, param):
-	return {'a':1, 'b':'2', 'c':'3'}
+t2 = def(v as duck, param as IDictionary):
+	param = apply({
+		'size': 30,
+		'count': 70,
+		'type': 'HW'
+	}, param)
+	return param
+	
 define_template "MT2", t2
+
 
 body:
 	pass
