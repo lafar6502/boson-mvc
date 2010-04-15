@@ -97,6 +97,8 @@
     <Compile Include="Boson\JSONViewDSLEngine.cs" />
     <Compile Include="Boson\JsonViewException.cs" />
     <Compile Include="Boson\JSONViewFactory.cs" />
+    <Compile Include="Boson\QuackDictWrapper.cs" />
+    <Compile Include="CallbackResult.cs" />
     <Compile Include="ExtDirect\DirectMethodAttribute.cs" />
     <Compile Include="ExtDirect\DirectRequest.cs" />
     <Compile Include="ExtDirect\DirectResponse.cs" />
@@ -106,6 +108,9 @@
     <Compile Include="ExtDirect\ResultsConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WindsorControllerFactory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ViewModel\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

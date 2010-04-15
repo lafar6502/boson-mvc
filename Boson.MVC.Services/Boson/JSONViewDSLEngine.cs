@@ -45,6 +45,7 @@ namespace BosonMVC.Services.Boson
         protected override void CustomizeCompiler(Boo.Lang.Compiler.BooCompiler compiler, Boo.Lang.Compiler.CompilerPipeline pipeline, string[] urls)
         {
             compiler.Parameters.Ducky = true;
+            
             List<Assembly> asms = new List<Assembly>();
             if (AutoReferenceLoadedAssemblies)
             {
@@ -61,7 +62,7 @@ namespace BosonMVC.Services.Boson
                     compiler.Parameters.References.Add(asm);
             }
             pipeline.Insert(1, new ImplicitBaseClassCompilerStep(
-                _baseType, "DoRender", _namespaces));
+                _baseType, "PrepareView", _namespaces));
             pipeline.Insert(2, new AutoReferenceFilesCompilerStep());
         }
     }
