@@ -5,8 +5,18 @@ obj:
 	prop {'ala':'ma kota'}
 	arr 'list':
 		val 389
-		
+	
+	t = [1, 2, 3].ToArray(int)
 	prop 'dupa':
 		call_template "MT1", 30, {}
 	prop 'MT2':
 		call_template "MT2", 30, {'size': 3289, 'type':'SW'}
+	arr 'MT3':
+		call_template "MT3", 'z' , {'size': 150 }
+		call_template "MT3", 'juzió?', { }
+		call_template "MT3", 'juzioc?', {'size': 50 }
+	arr 'MT4':
+		call_template "MT4", 'z' , {'size': 150 }
+		call_template "MT4", t, { }
+		call_template "MT4", 'juzioc?', {'size': 50 }
+		

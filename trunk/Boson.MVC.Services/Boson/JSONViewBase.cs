@@ -402,6 +402,7 @@ namespace BosonMVC.Services.Boson
             public TemplateDelegate Body { get; set; }
             public IDictionary DefaultParams { get; set; }
             public string Name { get; set; }
+            public JSONViewBase View { get; set; }
         }
 
         protected Hashtable _templates = new Hashtable();
@@ -413,7 +414,7 @@ namespace BosonMVC.Services.Boson
         /// <param name="act"></param>
         protected void define_template(string name, TemplateDelegate act)
         {
-            _templates[name] = new TemplateDefinition { Name = name, Body = act, DefaultParams = null };
+            _templates[name] = new TemplateDefinition { Name = name, Body = act, DefaultParams = null, View = this };
         }
 
         /// <summary>
@@ -424,8 +425,48 @@ namespace BosonMVC.Services.Boson
         /// <param name="td"></param>
         protected void define_template(string name, IDictionary defaultParams, TemplateDelegate td)
         {
-            _templates[name] = new TemplateDefinition { Name = name, Body = td, DefaultParams = defaultParams };
+            _templates[name] = new TemplateDefinition { Name = name, Body = td, DefaultParams = defaultParams, View = this };
         }
+
+        
+
+        private TemplateDefinition _curTd;
+        /// <summary>
+        /// Start template definition
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="body"></param>
+        protected void template(string name, Action body)
+        {
+            _curTd = new TemplateDefinition { Name = name, View = this };
+            body();
+            _templates[name] = _curTd;
+            _curTd = null;
+        }
+
+        protected TemplateDelegate TemplateBody
+        {
+            get { return _curTd.Body; }
+            set { _curTd.Body = value; }
+        }
+        /// <summary>
+        /// Define default template parameters
+        /// </summary>
+        /// <param name="dic"></param>
+        protected void parameters(IDictionary dic)
+        {
+            if (_curTd != null)
+            {
+                _curTd.DefaultParams = dic;
+            }
+            else throw new Exception();
+        }
+
+
+        [DuckTyped]
+        protected object TArg;
+        protected IDictionary TParam;
+        
 
         /// <summary>
         /// Call specified template
@@ -437,11 +478,13 @@ namespace BosonMVC.Services.Boson
         {
             TemplateDefinition td = (TemplateDefinition)_templates[name];
             if (td == null) throw new Exception("Template not found: " + name);
-
+            
             if (td.DefaultParams != null)
             {
                 parameters = apply(td.DefaultParams, parameters);
             }
+            td.View.TArg = value;
+            td.View.TParam = parameters;
             object ret = td.Body(value, parameters);
             if (ret != null)
             {
@@ -458,7 +501,18 @@ namespace BosonMVC.Services.Boson
         /// <param name="act"></param>
         protected void body(Action act)
         {
-            _body = act;
+            if (_curTd != null)
+            {
+                _curTd.Body = delegate(object v, IDictionary prm)
+                {
+                    act();
+                    return null;
+                };
+            }
+            else
+            {
+                _body = act;
+            }
         }
 
         private string _viewPath;

@@ -1,5 +1,7 @@
 import System.Collections
 
+
+
 t1 = def(v as duck, param as IDictionary):
 	obj:
 		prop {'name':'jestem sobie objekt', 'value': v}
@@ -17,5 +19,22 @@ t2 = def(v as duck, param as IDictionary):
 define_template "MT2", t2
 
 
+template "MT3":
+	parameters {
+		'size': 100
+	}
+	body:
+		p = quack(TParam)
+		val {'ale' : 'jazda', 'arg': TArg.Length, 'size': p.size}
+		
+template "MT4":
+	parameters {
+		'size' : 10
+		}
+	TemplateBody = def(v as duck, prm as IDictionary):
+		p = quack(prm)
+		val {'to': 'MT4', 'size' : p.size, 'len': v.Length }
+		
+		
 body:
 	pass
