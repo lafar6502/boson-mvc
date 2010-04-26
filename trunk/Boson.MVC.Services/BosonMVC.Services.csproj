@@ -91,6 +91,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AuthHttpModule.cs" />
     <Compile Include="Boson\BOMLViewBase.cs" />
     <Compile Include="Boson\FileStorageEx.cs" />
     <Compile Include="Boson\JSONViewBase.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="ExtDirect\IDirectAction.cs" />
     <Compile Include="ExtDirect\RequestDataConverter.cs" />
     <Compile Include="ExtDirect\ResultsConverter.cs" />
+    <Compile Include="IAuthenticationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WindsorControllerFactory.cs" />
   </ItemGroup>
