@@ -17,6 +17,6 @@ obj:
 		call_template "MT3", 'juzioc?', {'size': 50 }
 	arr 'MT4':
 		call_template "MT4", 'z' , {'size': 150 }
-		call_template "MT4", t, { }
+		call_template "MT4", 'iozi', { }
 		call_template "MT4", 'juzioc?', {'size': 50 }
 		
