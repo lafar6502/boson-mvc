@@ -34,9 +34,20 @@ namespace BosonMVC.Services.DirectHandler
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            JArray jar = JArray.Load(reader);
-            List<object> lst = Unpack(jar);
-            return lst.ToArray();
+            if (reader.TokenType == JsonToken.Null)
+            {
+                return new object[] { };
+            }
+            else if (reader.TokenType == JsonToken.StartArray)
+            {
+                JArray jar = JArray.Load(reader);
+                List<object> lst = Unpack(jar);
+                return lst.ToArray();
+            }
+            else
+            {
+                throw new Exception("Unexpected data token type: " + reader.TokenType);
+            }
         }
 
         
