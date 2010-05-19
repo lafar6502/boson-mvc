@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Web;
 using NLog;
-using Microsoft.Practices.ServiceLocation;
 using System.Security.Principal;
+using Castle.Windsor;
 
 namespace BosonMVC.Services
 {
@@ -25,47 +25,62 @@ namespace BosonMVC.Services
         public void Init(HttpApplication context)
         {
             _ctx = context;
-             context.PostAuthenticateRequest += new EventHandler(context_PostAuthenticateRequest);
+             context.PostAcquireRequestState += new EventHandler(context_PostAuthenticateRequest);
         }
 
-        private IServiceLocator GetServiceLocator()
+        private IAuthenticationService GetAuthService()
         {
-            return (IServiceLocator)_ctx.Application["servicelocator"];
+            IWindsorContainer wc = (IWindsorContainer) _ctx.Application["container"];
+            if (wc == null)
+            {
+                log.Warn("Missing castle container - configure Application['container'] object");
+                return null;
+            }
+            return wc.Resolve<IAuthenticationService>();
         }
 
         void context_PostAuthenticateRequest(object sender, EventArgs e)
         {
-            IServiceLocator sl = GetServiceLocator();
-            if (_ctx.User.Identity.IsAuthenticated)
+            try
             {
-                IPrincipal pr = null;
-                if (_ctx.Context.Session != null)
-                    pr = _ctx.Context.Session["_BosonMVC_Principal"] as IPrincipal;
-                
-                if (pr == null)
+                if (_ctx.User.Identity.IsAuthenticated)
                 {
-                    IAuthenticationService auth = sl.GetInstance<IAuthenticationService>();
-                    pr = auth.GetAuthenticatedUser(_ctx.User.Identity.Name, _ctx.User.Identity.AuthenticationType);
-                    if (pr != null && _ctx.Context.Session != null)
-                        _ctx.Context.Session["_BosonMVC_Principal"] = pr;
-                }
-                if (pr != null)
-                {
-                    log.Debug("User authenticated: {0}", pr.Identity.Name);
-                    System.Threading.Thread.CurrentPrincipal = pr;
-                }
-                else
-                {
-                    log.Warn("No principal for {0}", _ctx.User.Identity.Name);
-                    _ctx.Response.Redirect("Unauthorized.html");
+                    IPrincipal pr = null;
+                    if (_ctx.Context.Session != null)
+                        pr = _ctx.Context.Session["_BosonMVC_Principal"] as IPrincipal;
+
+                    if (pr == null)
+                    {
+                        IAuthenticationService auth = GetAuthService();
+                        if (auth == null) return; //do nothing
+                        log.Debug("Creating user principal {0} for request {1}", _ctx.User.Identity.Name, _ctx.Request.Url);
+                        pr = auth.GetAuthenticatedUser(_ctx.User.Identity.Name, _ctx.User.Identity.AuthenticationType);
+                        if (pr != null && _ctx.Context.Session != null)
+                            _ctx.Context.Session["_BosonMVC_Principal"] = pr;
+                    }
+                    if (pr != null)
+                    {
+                        log.Debug("User authenticated: {0} for request {1}", pr.Identity.Name, _ctx.Request.Url);
+                        System.Threading.Thread.CurrentPrincipal = pr;
+                    }
+                    else
+                    {
+                        log.Warn("No principal for {0}", _ctx.User.Identity.Name);
+                        _ctx.Response.Redirect("Unauthorized.html");
+                    }
                 }
             }
-
-            
+            catch (Exception ex)
+            {
+                log.Error("Error authenticating request: {0}", ex);
+                throw;
+            }
         }
 
    
         #endregion
 
     }
+
+    
 }

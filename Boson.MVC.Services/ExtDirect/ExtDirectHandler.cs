@@ -11,10 +11,11 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using Castle.Windsor;
+using System.Web.SessionState;
 
 namespace BosonMVC.Services.DirectHandler
 {
-    public class ExtDirectHandler : IHttpHandler
+    public class ExtDirectHandler : IHttpHandler, IRequiresSessionState
     {
         private Logger log = LogManager.GetCurrentClassLogger();
         private Dictionary<string, Type> _actionTypes = new Dictionary<string, Type>();
@@ -218,90 +219,111 @@ namespace BosonMVC.Services.DirectHandler
         {
             get
             {
-                return System.Configuration.ConfigurationManager.AppSettings["NGExt.Services.DirectHandler.ApplicationNamespace"];
+                return System.Configuration.ConfigurationManager.AppSettings["BosonMVC.ExtDirectHandler.ApplicationNamespace"];
             }
+        }
+
+        [ThreadStatic]
+        private static HttpContext _curCtx;
+
+        public static HttpContext CurrentHttpContext
+        {
+            get { return _curCtx; }
         }
 
         public void ProcessRequest(HttpContext context)
         {
-
+            
             ServiceLocator = (IWindsorContainer)context.Application["container"];
 
             string data = string.Empty;
             string type = "text/javascript";
-            
-            if (context.Request.TotalBytes == 0 && string.IsNullOrEmpty(context.Request["extAction"]))
-            {
-                StringWriter sw = new StringWriter();
-                OutputDirectAPI(context, sw);
-                string api = APINamespace;
-                if (api == null || api.Length == 0)
-                {
-                    log.Warn("Ext.Direct API - javascript namespace not specified. Specify 'NGExt.Services.DirectHandler.ApplicationNamespace' key in appsettings section in config file");
-                    api = "Application.app.DIRECT_API";
-                }
-                data = string.Format("{0} = {1}", api, sw.ToString());
-            }
-            else
-            {
-                List<DirectResponse> responses = new List<DirectResponse>();
-                List<DirectRequest> requests = new List<DirectRequest>();
-                if (!String.IsNullOrEmpty(context.Request[DirectRequest.RequestFormAction]))
-                {
-                    DirectRequest request = new DirectRequest();
-                    request.Action = context.Request[DirectRequest.RequestFormAction] ?? string.Empty;
-                    request.Method = context.Request[DirectRequest.RequestFormMethod] ?? string.Empty;
-                    request.Type = context.Request[DirectRequest.RequestFormType] ?? string.Empty;
-                    request.IsUpload = Convert.ToBoolean(context.Request[DirectRequest.RequestFormUpload]);
-                    request.TransactionId = Convert.ToInt32(context.Request[DirectRequest.RequestFormTransactionId]);
-                    request.Data = new object[] { context.Request };
-                    requests.Add(request);
-                    //responses.Add(ProcessRequest(request));
-                }
-                else
-                {
-                    UTF8Encoding encoding = new UTF8Encoding();
-                    string json = encoding.GetString(context.Request.BinaryRead(context.Request.TotalBytes));
-                    log.Debug("Processing JSON: {0}", json);
-                    if (json.StartsWith("["))
-                    {
-                        List<DirectRequest> rl = JsonConvert.DeserializeObject<List<DirectRequest>>(json, GetSerializerSettings());
-                        requests.AddRange(rl);
-                    }
-                    else
-                    {
-                        DirectRequest drq = JsonConvert.DeserializeObject<DirectRequest>(json, GetSerializerSettings());
-                        requests.Add(drq);
-                    }
-                }
-                //now calling it
-                foreach (DirectRequest drq in requests)
-                {
-                    responses.Add(ProcessRequest(drq));
-                }
-                //now return the results
 
-                if (responses.Count > 1)
+            try
+            {
+                _curCtx = context;
+                if (context.Request.TotalBytes == 0 && string.IsNullOrEmpty(context.Request["extAction"]))
                 {
-                    data = JsonConvert.SerializeObject(responses, Formatting.Indented, GetSerializerSettings());
+                    StringWriter sw = new StringWriter();
+                    OutputDirectAPI(context, sw);
+                    string api = APINamespace;
+                    if (api == null || api.Length == 0)
+                    {
+                        log.Warn("Ext.Direct API - javascript namespace not specified. Specify 'NGExt.Services.DirectHandler.ApplicationNamespace' key in appsettings section in config file");
+                        api = "Application.app.DIRECT_API";
+                    }
+                    data = string.Format("{0} = {1}", api, sw.ToString());
                 }
                 else
                 {
-                    DirectResponse r = responses[0];
-                    if (r.IsUpload)
+                    List<DirectResponse> responses = new List<DirectResponse>();
+                    List<DirectRequest> requests = new List<DirectRequest>();
+                    if (!String.IsNullOrEmpty(context.Request[DirectRequest.RequestFormAction]))
                     {
-                        type = "text/html";
-                        data = String.Format("<html><body><textarea>{0}</textarea></body></html>", JsonConvert.SerializeObject(r, Formatting.Indented, GetSerializerSettings()).Replace("&quot;", "\\&quot;"));
+                        DirectRequest request = new DirectRequest();
+                        request.Action = context.Request[DirectRequest.RequestFormAction] ?? string.Empty;
+                        request.Method = context.Request[DirectRequest.RequestFormMethod] ?? string.Empty;
+                        request.Type = context.Request[DirectRequest.RequestFormType] ?? string.Empty;
+                        request.IsUpload = Convert.ToBoolean(context.Request[DirectRequest.RequestFormUpload]);
+                        request.TransactionId = Convert.ToInt32(context.Request[DirectRequest.RequestFormTransactionId]);
+                        request.Data = new object[] { context.Request };
+                        requests.Add(request);
+                        //responses.Add(ProcessRequest(request));
                     }
                     else
                     {
-                        data = JsonConvert.SerializeObject(r, Formatting.Indented, GetSerializerSettings());
+                        UTF8Encoding encoding = new UTF8Encoding();
+                        string json = encoding.GetString(context.Request.BinaryRead(context.Request.TotalBytes));
+                        log.Debug("Processing JSON: {0}", json);
+                        if (json.StartsWith("["))
+                        {
+                            List<DirectRequest> rl = JsonConvert.DeserializeObject<List<DirectRequest>>(json, GetSerializerSettings());
+                            requests.AddRange(rl);
+                        }
+                        else
+                        {
+                            DirectRequest drq = JsonConvert.DeserializeObject<DirectRequest>(json, GetSerializerSettings());
+                            requests.Add(drq);
+                        }
+                    }
+                    //now calling it
+                    foreach (DirectRequest drq in requests)
+                    {
+                        responses.Add(ProcessRequest(drq));
+                    }
+                    //now return the results
+
+                    if (responses.Count > 1)
+                    {
+                        data = JsonConvert.SerializeObject(responses, Formatting.Indented, GetSerializerSettings());
+                    }
+                    else
+                    {
+                        DirectResponse r = responses[0];
+                        if (r.IsUpload)
+                        {
+                            type = "text/html";
+                            data = String.Format("<html><body><textarea>{0}</textarea></body></html>", JsonConvert.SerializeObject(r, Formatting.Indented, GetSerializerSettings()).Replace("&quot;", "\\&quot;"));
+                        }
+                        else
+                        {
+                            data = JsonConvert.SerializeObject(r, Formatting.Indented, GetSerializerSettings());
+                        }
                     }
                 }
+                log.Debug("Response\nContent-Type: {0}\n{1}", type, data);
+                context.Response.ContentType = type;
+                context.Response.Write(data);
             }
-            log.Debug("Response\nContent-Type: {0}\n{1}", type, data);
-            context.Response.ContentType = type;
-            context.Response.Write(data);
+            catch (Exception ex)
+            {
+                log.Error("Error handling direct rpc request: {0}", ex);
+                throw;
+            }
+            finally
+            {
+                _curCtx = null;
+            }
         }
 
         #endregion
