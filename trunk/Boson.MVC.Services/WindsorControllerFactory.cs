@@ -18,10 +18,17 @@ namespace BosonMVC.Services
             _wc = wc;
         }
 
+        protected override IController GetControllerInstance(System.Web.Routing.RequestContext requestContext, Type controllerType)
+        {
+            if (controllerType == null) return null;
+            return (IController)_wc.Resolve(controllerType);
+        }
+
+        /* MVC 1.0
         protected override IController GetControllerInstance(Type controllerType)
         {
             return (IController)_wc.Resolve(controllerType);
-        }
+        }*/
 
         public override void  ReleaseController(IController controller)
         {
