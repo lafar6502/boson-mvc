@@ -37,4 +37,6 @@ namespace BosonMVC.Services.DirectHandler
         /// <returns></returns>
         object Execute(string methodName, object[] args);
     }
+
+    
 }
