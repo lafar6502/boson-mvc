@@ -166,7 +166,11 @@ namespace BosonMVC.Services.DirectHandler
                             if (conv.CanConvertFrom(drq.Data[i].GetType()))
                                 paramVals.Add(conv.ConvertFrom(drq.Data[i]));
                             else
-                                paramVals.Add(drq.Data[i]);
+                            {
+                                paramVals.Add(Convert.ChangeType(drq.Data[i], prm[i].ParameterType));
+
+                                //paramVals.Add(drq.Data[i]);
+                            }
                         }
                     }
                 }

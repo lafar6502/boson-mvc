@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testapp", "Testapp\Testapp.csproj", "{292E51FD-57D9-4C38-95EA-B17A03B4EA1A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BosonMVC.Services", "Boson.MVC.Services\BosonMVC.Services.csproj", "{59811FEA-141C-439A-9A05-0EC6A110AA96}"
