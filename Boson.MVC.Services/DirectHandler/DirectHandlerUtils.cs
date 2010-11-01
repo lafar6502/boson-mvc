@@ -3,38 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
-using NLog;
-using Newtonsoft.Json;
-using Castle.MicroKernel;
 using System.IO;
+using Newtonsoft.Json;
+using NLog;
+using Castle.Windsor;
+using Castle.MicroKernel;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
-using Castle.Windsor;
-using System.Web.SessionState;
 
 namespace BosonMVC.Services.DirectHandler
 {
-    public class ExtDirectHandler : IHttpHandler, IRequiresSessionState
+    public class DirectHandlerUtils
     {
-        private Logger log = LogManager.GetCurrentClassLogger();
-        private Dictionary<string, Type> _actionTypes = new Dictionary<string, Type>();
+        private static Logger log = LogManager.GetCurrentClassLogger();
 
-        public IWindsorContainer ServiceLocator { get; set; }
-        #region IHttpHandler Members
-
-
-        public bool IsReusable
-        {
-            get { return true; }
-        }
-
-        /// <summary>
-        /// Generate API description for Ext.Direct
-        /// </summary>
-        /// <param name="ctx"></param>
-        /// <param name="tw"></param>
-        protected void OutputDirectAPI(HttpContext ctx, TextWriter tw)
+        public static void OutputDirectAPI(HttpContext ctx, TextWriter tw, IKernel serviceLocator)
         {
             JsonWriter jw = new JsonTextWriter(tw);
             ///produce API here
@@ -44,26 +28,26 @@ namespace BosonMVC.Services.DirectHandler
             jw.WritePropertyName("url"); jw.WriteValue(ctx.Request.Path);
 
             List<string> names = new List<string>();
-            IHandler[] hs = ServiceLocator.Kernel.GetHandlers(typeof(IDirectAction));
+            IHandler[] hs = serviceLocator.GetHandlers(typeof(IDirectAction));
             foreach (IHandler ih in hs)
             {
                 string name = ih.ComponentModel.Name;
                 if (name == null || name.Length == 0) throw new Exception("Found IDirectAction with no name - fix your component configuration");
                 names.Add(name);
             }
-            
+
             jw.WritePropertyName("actions");
             jw.WriteStartObject();
             foreach (string name in names)
             {
-                IDirectAction act = ServiceLocator.Resolve<IDirectAction>(name);
+                IDirectAction act = serviceLocator.Resolve<IDirectAction>(name);
                 if (act == null) throw new Exception("Failed to resolve IDirectAction: " + name);
                 Type tp = act.GetType();
                 jw.WritePropertyName(name);
                 jw.WriteStartArray();
                 foreach (MethodInfo mi in tp.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.InvokeMethod))
                 {
-                    DirectMethodAttribute dm = (DirectMethodAttribute) Attribute.GetCustomAttribute(mi, typeof(DirectMethodAttribute));
+                    DirectMethodAttribute dm = (DirectMethodAttribute)Attribute.GetCustomAttribute(mi, typeof(DirectMethodAttribute));
                     if (dm != null)
                     {
                         jw.WriteStartObject();
@@ -84,9 +68,36 @@ namespace BosonMVC.Services.DirectHandler
             jw.Flush();
         }
 
-        private void EnsureServiceLocator()
+        public static DirectResponse ProcessRequest(DirectRequest drq, IKernel serviceLocator)
         {
-            
+            log.Info("Processing request {0}: {1}:{2}. Args: {3}", drq.TransactionId, drq.Action, drq.Method, drq.Data.Length);
+            DirectResponse r = new DirectResponse(drq);
+            try
+            {
+                IDirectAction ida = serviceLocator.Resolve<IDirectAction>(drq.Action);
+                if (ida == null) throw new Exception("Action not found: " + drq.Action);
+                object ret = DefaultExecuteActionMethod(drq, ida);
+                log.Info("Finished processing request {0}: {1}:{2}", drq.TransactionId, drq.Action, drq.Method);
+                if (ret is DirectResponse)
+                {
+                    r = (DirectResponse)ret;
+                }
+                else
+                {
+                    r.Result = ret;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Error processing request {0}: {1}:{2}: {3}", drq.TransactionId, drq.Action, drq.Method, ex);
+                if (ex is TargetInvocationException)
+                {
+                    ex = ((TargetInvocationException)ex).InnerException;
+                }
+                r.ExceptionMessage = ex.Message;
+                r.Type = DirectResponse.ResponseExceptionType;
+            }
+            return r;
         }
 
         /// <summary>
@@ -95,7 +106,7 @@ namespace BosonMVC.Services.DirectHandler
         /// <param name="drq"></param>
         /// <param name="ida"></param>
         /// <returns></returns>
-        private object DefaultExecuteActionMethod(DirectRequest drq, IDirectAction ida)
+        private static object DefaultExecuteActionMethod(DirectRequest drq, IDirectAction ida)
         {
             JsonSerializer ser = JsonSerializer.Create(GetSerializerSettings());
             ParameterInfo[] prm = null;
@@ -120,12 +131,12 @@ namespace BosonMVC.Services.DirectHandler
             {
                 prm = mi.GetParameters();
             }
-            
+
 
             List<object> paramVals = new List<object>();
             if (dontConvertParams)
             {
-                foreach(object d in drq.Data)
+                foreach (object d in drq.Data)
                     paramVals.Add(d);
             }
             else
@@ -181,76 +192,25 @@ namespace BosonMVC.Services.DirectHandler
                 return idad.Execute(drq.Method, paramVals.ToArray());
         }
 
-        private DirectResponse ProcessRequest(DirectRequest drq)
-        {
-            log.Info("Processing request {0}: {1}:{2}. Args: {3}", drq.TransactionId, drq.Action, drq.Method, drq.Data.Length);
-            DirectResponse r = new DirectResponse(drq);
-            try
-            {
-                IDirectAction ida = ServiceLocator.Resolve<IDirectAction>(drq.Action);
-                if (ida == null) throw new Exception("Action not found: " + drq.Action);
-                object ret = DefaultExecuteActionMethod(drq, ida);
-                log.Info("Finished processing request {0}: {1}:{2}", drq.TransactionId, drq.Action, drq.Method);
-                if (ret is DirectResponse)
-                {
-                    r = (DirectResponse)ret;
-                }
-                else
-                {
-                    r.Result = ret;
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Error processing request {0}: {1}:{2}: {3}", drq.TransactionId, drq.Action, drq.Method, ex);
-                if (ex is TargetInvocationException)
-                {
-                    ex = ((TargetInvocationException)ex).InnerException;
-                }
-                r.ExceptionMessage = ex.Message;
-                r.Type = DirectResponse.ResponseExceptionType;
-            }
-            return r;
-        }
-
-        private JsonSerializerSettings GetSerializerSettings()
+        public static JsonSerializerSettings GetSerializerSettings()
         {
             JsonSerializerSettings sett = new JsonSerializerSettings();
             return sett;
         }
 
-        public string APINamespace
+        public static void ProcessRequest(HttpContext context, IKernel serviceLocator, string apiNamespace)
         {
-            get
-            {
-                return System.Configuration.ConfigurationManager.AppSettings["BosonMVC.ExtDirectHandler.ApplicationNamespace"];
-            }
-        }
-
-        [ThreadStatic]
-        private static HttpContext _curCtx;
-
-        public static HttpContext CurrentHttpContext
-        {
-            get { return _curCtx; }
-        }
-
-        public void ProcessRequest(HttpContext context)
-        {
-            
-            ServiceLocator = (IWindsorContainer)context.Application["container"];
 
             string data = string.Empty;
             string type = "text/javascript";
 
             try
             {
-                _curCtx = context;
                 if (context.Request.TotalBytes == 0 && string.IsNullOrEmpty(context.Request["extAction"]))
                 {
                     StringWriter sw = new StringWriter();
-                    OutputDirectAPI(context, sw);
-                    string api = APINamespace;
+                    OutputDirectAPI(context, sw, serviceLocator);
+                    string api = apiNamespace;
                     if (api == null || api.Length == 0)
                     {
                         log.Warn("Ext.Direct API - javascript namespace not specified. Specify 'NGExt.Services.DirectHandler.ApplicationNamespace' key in appsettings section in config file");
@@ -281,25 +241,25 @@ namespace BosonMVC.Services.DirectHandler
                         log.Debug("Processing JSON: {0}", json);
                         if (json.StartsWith("["))
                         {
-                            List<DirectRequest> rl = JsonConvert.DeserializeObject<List<DirectRequest>>(json, GetSerializerSettings());
+                            List<DirectRequest> rl = JsonConvert.DeserializeObject<List<DirectRequest>>(json, DirectHandlerUtils.GetSerializerSettings());
                             requests.AddRange(rl);
                         }
                         else
                         {
-                            DirectRequest drq = JsonConvert.DeserializeObject<DirectRequest>(json, GetSerializerSettings());
+                            DirectRequest drq = JsonConvert.DeserializeObject<DirectRequest>(json, DirectHandlerUtils.GetSerializerSettings());
                             requests.Add(drq);
                         }
                     }
                     //now calling it
                     foreach (DirectRequest drq in requests)
                     {
-                        responses.Add(ProcessRequest(drq));
+                        responses.Add(ProcessRequest(drq, serviceLocator));
                     }
                     //now return the results
 
                     if (responses.Count > 1)
                     {
-                        data = JsonConvert.SerializeObject(responses, Formatting.Indented, GetSerializerSettings());
+                        data = JsonConvert.SerializeObject(responses, Formatting.Indented, DirectHandlerUtils.GetSerializerSettings());
                     }
                     else
                     {
@@ -307,11 +267,11 @@ namespace BosonMVC.Services.DirectHandler
                         if (r.IsUpload)
                         {
                             type = "text/html";
-                            data = String.Format("<html><body><textarea>{0}</textarea></body></html>", JsonConvert.SerializeObject(r, Formatting.Indented, GetSerializerSettings()).Replace("&quot;", "\\&quot;"));
+                            data = String.Format("<html><body><textarea>{0}</textarea></body></html>", JsonConvert.SerializeObject(r, Formatting.Indented, DirectHandlerUtils.GetSerializerSettings()).Replace("&quot;", "\\&quot;"));
                         }
                         else
                         {
-                            data = JsonConvert.SerializeObject(r, Formatting.Indented, GetSerializerSettings());
+                            data = JsonConvert.SerializeObject(r, Formatting.Indented, DirectHandlerUtils.GetSerializerSettings());
                         }
                     }
                 }
@@ -324,12 +284,7 @@ namespace BosonMVC.Services.DirectHandler
                 log.Error("Error handling direct rpc request: {0}", ex);
                 throw;
             }
-            finally
-            {
-                _curCtx = null;
-            }
         }
-
-        #endregion
     }
+
 }
