@@ -41,6 +41,10 @@ namespace BosonMVC.Services
             {
                 if (typeof(IController).IsAssignableFrom(t))
                 {
+                    if (wc.Kernel.GetHandler(t) != null)
+                    {
+                        continue;
+                    }
                     wc.Register(Component.For(typeof(IController), t).ImplementedBy(t).LifeStyle.Transient);
                 }
             }
