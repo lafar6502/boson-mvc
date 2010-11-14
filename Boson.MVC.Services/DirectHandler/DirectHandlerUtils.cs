@@ -155,13 +155,13 @@ namespace BosonMVC.Services.DirectHandler
                     {
                         paramVals.Add(drq);
                     }
-                    else if (drq.Data[i] is JObject)
+                    else if (drq.Data[i] is JToken)
                     {
-                        JObject job = (JObject)drq.Data[i];
-                        if (typeof(JObject).IsAssignableFrom(prm[i].ParameterType))
-                            paramVals.Add(job);
+                        JToken jt = (JToken)drq.Data[i];
+                        if (typeof(JToken).IsAssignableFrom(prm[i].ParameterType))
+                            paramVals.Add(jt);
                         else
-                            paramVals.Add(ser.Deserialize(job.CreateReader(), prm[i].ParameterType));
+                            paramVals.Add(ser.Deserialize(jt.CreateReader(), prm[i].ParameterType));
                     }
                     else if (prm[i].ParameterType.IsArray)
                     {

@@ -23,7 +23,7 @@ namespace BosonMVC.Services.DirectHandler
                 if (tok is JObject)
                     lst.Add(tok);
                 else if (tok is JArray)
-                    lst.Add(Unpack((JArray) tok));
+                    lst.Add(tok);
                 else if (tok is JValue)
                     lst.Add(((JValue)tok).Value);
                 else throw new Exception("Unhandled token type: " + tok.GetType());
