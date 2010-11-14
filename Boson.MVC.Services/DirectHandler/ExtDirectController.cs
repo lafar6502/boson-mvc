@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using NLog;
 using System.Web.Mvc;
-using Microsoft.Practices.ServiceLocation;
 using System.Web;
 using System.Text;
 using System.IO;

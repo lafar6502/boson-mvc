@@ -67,14 +67,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\extlib\Castle.Windsor.dll</HintPath>
     </Reference>
-    <Reference Include="CommonServiceLocator.WindsorAdapter, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\extlib\CommonServiceLocator.WindsorAdapter.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Practices.ServiceLocation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\extlib\Microsoft.Practices.ServiceLocation.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=3.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\extlib\Newtonsoft.Json.dll</HintPath>
@@ -127,10 +119,12 @@
     <Compile Include="DirectHandler\RequestDataConverter.cs" />
     <Compile Include="DirectHandler\ResultsConverter.cs" />
     <Compile Include="IAuthenticationService.cs" />
+    <Compile Include="IServiceResolver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StaticFileHandler.cs" />
     <Compile Include="Util\LRUCache.cs" />
     <Compile Include="WindsorControllerFactory.cs" />
+    <Compile Include="WindsorServiceResolver.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ViewModel\" />

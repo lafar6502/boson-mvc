@@ -6,7 +6,6 @@ using System.Web.Mvc;
 using System.Web.Routing;
 using Castle.Windsor;
 using Castle.MicroKernel.Registration;
-using Microsoft.Practices.ServiceLocation;
 using BosonMVC.Services;
 
 namespace Testapp
@@ -34,7 +33,7 @@ namespace Testapp
             InitializeContainer();
             ControllerBuilder.Current.SetControllerFactory(new BosonMVC.Services.WindsorControllerFactory(Container));
             BosonMVC.Services.Boson.JSONViewFactory fact = new BosonMVC.Services.Boson.JSONViewFactory();
-            fact.ServiceLocator = Container.Resolve<IServiceLocator>();
+            fact.ServiceLocator = Container.Resolve<IServiceResolver>();
             fact.BaseDirectory = Server.MapPath("/");
             ViewEngines.Engines.Add(fact);
             WindsorControllerFactory.RegisterControllersFromAssembly(typeof(MvcApplication).Assembly, Container);
@@ -44,9 +43,7 @@ namespace Testapp
         protected void InitializeContainer()
         {
             WindsorContainer wc = new WindsorContainer();
-            CommonServiceLocator.WindsorAdapter.WindsorServiceLocator wsl = new CommonServiceLocator.WindsorAdapter.WindsorServiceLocator(wc);
-            wc.Register(Component.For<IServiceLocator>().Instance(wsl));
-
+            wc.Register(Component.For<IServiceResolver>().ImplementedBy<WindsorServiceResolver>().LifeStyle.Singleton);
             Application.Add("container", wc);
         }
 

@@ -6,7 +6,6 @@ using NLog;
 using Rhino.DSL;
 using System.IO;
 using System.Web;
-using Microsoft.Practices.ServiceLocation;
 
 namespace BosonMVC.Services.Boson
 {
@@ -55,7 +54,7 @@ namespace BosonMVC.Services.Boson
             set { _engine.BaseDirectory = value; }
         }
 
-        public IServiceLocator ServiceLocator { get; set; }
+        public IServiceResolver ServiceLocator { get; set; }
 
         public string[] Namespaces
         {
@@ -113,7 +112,12 @@ namespace BosonMVC.Services.Boson
             }
             else throw new Exception("Unrecognized view: " + viewPath);
         }
-        
+
+        public void RenderView(string viewName, ViewContext vc, TextWriter output)
+        {
+            IView iv = CreateView(viewName);
+            iv.Render(vc, output);
+        }
 
     }
 }
