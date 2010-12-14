@@ -31,7 +31,7 @@ namespace BosonMVC.Services.DirectHandler
 
         private Logger log = LogManager.GetCurrentClassLogger();
 
-        public void Execute(System.Web.Routing.RequestContext requestContext)
+        public virtual void Execute(System.Web.Routing.RequestContext requestContext)
         {
             HttpContext context = HttpContext.Current;
             DirectHandlerUtils.ProcessRequest(context, ServiceLocator, APINamespace);
