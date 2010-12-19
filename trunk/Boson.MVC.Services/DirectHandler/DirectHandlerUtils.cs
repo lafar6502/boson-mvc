@@ -151,9 +151,15 @@ namespace BosonMVC.Services.DirectHandler
                 }
                 for (int i = 0; i < prm.Length; i++)
                 {
+                    
                     if (prm[i].ParameterType == typeof(DirectRequest))
                     {
                         paramVals.Add(drq);
+                        continue;
+                    }
+                    if (i >= drq.Data.Length)
+                    {
+                        paramVals.Add(null);
                     }
                     else if (drq.Data[i] is JToken)
                     {
@@ -195,6 +201,8 @@ namespace BosonMVC.Services.DirectHandler
         public static JsonSerializerSettings GetSerializerSettings()
         {
             JsonSerializerSettings sett = new JsonSerializerSettings();
+            sett.Converters.Add(new Newtonsoft.Json.Converters.IsoDateTimeConverter());
+            
             return sett;
         }
 
