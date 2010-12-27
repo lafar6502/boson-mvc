@@ -53,7 +53,7 @@ namespace BosonMVC.Services.DirectHandler
             try
             {
                 _curCtx = context;
-                DirectHandlerUtils.ProcessRequest(context, ServiceLocator.Kernel, APINamespace);
+                DirectHandlerUtils.ProcessRequest(context, ServiceLocator.Kernel);
             }
             finally
             {

@@ -206,7 +206,7 @@ namespace BosonMVC.Services.DirectHandler
             return sett;
         }
 
-        public static void ProcessRequest(HttpContext context, IKernel serviceLocator, string apiNamespace)
+        public static void ProcessRequest(HttpContext context, IKernel serviceLocator)
         {
 
             string data = string.Empty;
@@ -218,13 +218,7 @@ namespace BosonMVC.Services.DirectHandler
                 {
                     StringWriter sw = new StringWriter();
                     OutputDirectAPI(context, sw, serviceLocator);
-                    string api = apiNamespace;
-                    if (api == null || api.Length == 0)
-                    {
-                        log.Warn("Ext.Direct API - javascript namespace not specified. Specify 'NGExt.Services.DirectHandler.ApplicationNamespace' key in appsettings section in config file");
-                        api = "Application.app.DIRECT_API";
-                    }
-                    data = string.Format("{0} = {1}", api, sw.ToString());
+                    data = string.Format("Ext.Direct.addProvider({0})", sw.ToString());
                 }
                 else
                 {
