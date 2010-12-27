@@ -17,24 +17,19 @@ namespace BosonMVC.Services.DirectHandler
     {
         public ExtDirectController()
         {
-            APINamespace = "Direct";
         }
 
         /// <summary>
         /// Service locator for finding direct handlers
         /// </summary>
         public IKernel ServiceLocator { get; set; }
-        /// <summary>
-        /// namespace for generated Ext API
-        /// </summary>
-        public string APINamespace { get; set; }
 
         private Logger log = LogManager.GetCurrentClassLogger();
 
         public virtual void Execute(System.Web.Routing.RequestContext requestContext)
         {
             HttpContext context = HttpContext.Current;
-            DirectHandlerUtils.ProcessRequest(context, ServiceLocator, APINamespace);
+            DirectHandlerUtils.ProcessRequest(context, ServiceLocator);
         }
 
        
